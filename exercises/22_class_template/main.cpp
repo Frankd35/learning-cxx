@@ -1,5 +1,7 @@
 ﻿#include "../exercise.h"
+#include <cstring>
 
+// refs: https://github.com/hgcode1130/learning-cxx/blob/main/exercises/22_class_template/main.cpp
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
 template<class T>
@@ -9,7 +11,8 @@ struct Tensor4D {
 
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
-        // TODO: 填入正确的 shape 并计算 size
+        std::memcpy(shape, shape_, 4 * sizeof(unsigned int));
+        size = shape[0] * shape[1] * shape[2] * shape[3];
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -27,7 +30,32 @@ struct Tensor4D {
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
-        // TODO: 实现单向广播的加法
+        for (unsigned int i = 0; i < shape[0]; ++i) {
+            for (unsigned int j = 0; j < shape[1]; ++j) {
+                for (unsigned int k = 0; k < shape[2]; ++k) {
+                    for (unsigned int l = 0; l < shape[3]; ++l) {
+                        // 计算具体的索引
+                        unsigned int idx = ((i * shape[1] + j) * shape[2] + k) * shape[3] + l;
+
+                        // 计算 others 的数据索引
+                        unsigned int other_i = (i < others.shape[0]) ? i : 0;
+                        unsigned int other_j = (j < others.shape[1]) ? j : 0;
+                        unsigned int other_k = (k < others.shape[2]) ? k : 0;
+                        unsigned int other_l = (l < others.shape[3]) ? l : 0;
+
+                        // 处理 broadcast
+                        if (others.shape[0] == 1) { other_i = 0; }
+                        if (others.shape[1] == 1) { other_j = 0; }
+                        if (others.shape[2] == 1) { other_k = 0; }
+                        if (others.shape[3] == 1) { other_l = 0; }
+
+                        unsigned int other_idx = ((other_i * others.shape[1] + other_j) * others.shape[2] + other_k) * others.shape[3] + other_l;
+
+                        data[idx] += others.data[other_idx];
+                    }
+                }
+            }
+        }
         return *this;
     }
 };
